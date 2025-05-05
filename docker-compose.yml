@@ -1,0 +1,97 @@
+services:
+  hadoop-master:
+    build: . # Build image from Dockerfile in current dir
+    hostname: hadoop-master
+    container_name: hadoop-master
+    volumes:
+      # Persist NameNode metadata
+      - namenode_data:/opt/hadoop_data/namenode
+      # Persist tmp data if needed
+      - hadoop_tmp_master:/opt/hadoop_tmp/data
+    ports:
+      # HDFS UI
+      - "9870:9870"
+      # YARN UI
+      - "8088:8088"
+      # MapReduce Job History UI
+      - "19888:19888"
+      # HDFS Data Transfer (Optional, only if accessing HDFS directly from host)
+      # - "9866:9866"
+      # HDFS Service RPC (Optional, only if accessing HDFS directly from host)
+      # - "9000:9000"
+    # environment:
+    #   # So slaves can find namenode/resourcemanager via hostname
+    #   EXTRA_HOSTS: |
+    #     hadoop-master:127.0.0.1
+    #     hadoop-slave1:${SLAVE1_IP:-172.20.0.101} # Provide default or override via .env
+    #     hadoop-slave2:${SLAVE2_IP:-172.20.0.102} # Provide default or override via .env
+    command: ["/bin/bash", "/opt/scripts/entrypoint.sh"] # Override default CMD
+    networks:
+      hadoop_network:
+        # ipv4_address: ${MASTER_IP:-172.20.0.100} # Optional: Assign static IP
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 30s
+      timeout: 15s      # Optional: Increased timeout
+      retries: 10       # Optional: Increased retries
+      start_period: 60s # IMPORTANT: Wait 60s before first failure counts
+
+
+  hadoop-slave1:
+    build: .
+    hostname: hadoop-slave1
+    container_name: hadoop-slave1
+    volumes:
+      # Persist DataNode data
+      - datanode1_data:/opt/hadoop_data/datanode
+      # Persist tmp data if needed
+      - hadoop_tmp_slave1:/opt/hadoop_tmp/data
+    depends_on:
+      hadoop-master:
+        condition: service_started # Wait for master NameNode UI to be accessible
+    # environment:
+    #   EXTRA_HOSTS: |
+    #     hadoop-master:${MASTER_IP:-172.20.0.100}
+    #     hadoop-slave1:127.0.0.1
+    #     hadoop-slave2:${SLAVE2_IP:-172.20.0.102}
+    networks:
+      hadoop_network:
+        # ipv4_address: ${SLAVE1_IP:-172.20.0.101} # Optional: Assign static IP
+    command: ["/bin/bash", "/opt/scripts/slave-entrypoint.sh"]
+
+  hadoop-slave2:
+    build: .
+    hostname: hadoop-slave2
+    container_name: hadoop-slave2
+    volumes:
+      # Persist DataNode data
+      - datanode2_data:/opt/hadoop_data/datanode
+      # Persist tmp data if needed
+      - hadoop_tmp_slave2:/opt/hadoop_tmp/data
+    depends_on:
+      hadoop-master:
+        condition: service_started # Wait for master NameNode UI to be accessible
+    # environment:
+    #   EXTRA_HOSTS: |
+    #     hadoop-master:${MASTER_IP:-172.20.0.100}
+    #     hadoop-slave1:${SLAVE1_IP:-172.20.0.101}
+    #     hadoop-slave2:127.0.0.1
+    networks:
+      hadoop_network:
+        # ipv4_address: ${SLAVE2_IP:-172.20.0.102} # Optional: Assign static IP
+    command: ["/bin/bash", "/opt/scripts/slave-entrypoint.sh"]
+
+volumes:
+  namenode_data:
+  datanode1_data:
+  datanode2_data:
+  hadoop_tmp_master:
+  hadoop_tmp_slave1:
+  hadoop_tmp_slave2:
+
+networks:
+  hadoop_network:
+    driver: bridge
+    # ipam:
+    #  config:
+    #    - subnet: ${SUBNET:-172.20.0.0/16} # Define subnet
