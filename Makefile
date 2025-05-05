@@ -4,6 +4,8 @@
 COMPOSE_CMD = docker compose
 COMPOSE_FILE = docker-compose.yml
 MASTER_CONTAINER = hadoop-master
+SLAVE_1 = hadoop-slave1
+SLAVE_2 = hadoop-slave2
 HADOOP_VERSION ?= 3.3.6# Default Hadoop version, can be overridden e.g., make HADOOP_VERSION=3.3.5 test
 HADOOP_EXAMPLES_JAR = $$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-$(HADOOP_VERSION).jar
 HDFS_WC_INPUT_DIR = /user/root/input/wc_example # Input dir on HDFS

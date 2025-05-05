@@ -1,3 +1,4 @@
+<!-- config/yarn-site.xml -->
 <configuration>
     <property>
         <name>yarn.nodemanager.aux-services</name>
@@ -5,17 +6,54 @@
     </property>
     <property>
         <name>yarn.resourcemanager.hostname</name>
-        <value>hadoop-master</value> </property>
-    <property>
-        <name>yarn.nodemanager.vmem-check-enabled</name>
-        <value>false</value>
+        <value>hadoop-master</value> <!-- Service name from docker-compose -->
     </property>
+    <property>
+       <name>yarn.nodemanager.resource.memory-mb</name>
+       <value>1024</value> <!-- Adjust based on slave node RAM -->
+     </property>
+     <property>
+       <name>yarn.scheduler.minimum-allocation-mb</name>
+       <value>128</value> <!-- Adjust based on slave node RAM -->
+     </property>
+     <property>
+       <name>yarn.nodemanager.vmem-check-enabled</name>
+       <value>false</value> <!-- Disable virtual memory check for simplicity in Docker -->
+     </property>
      <property>
         <name>yarn.log-aggregation-enable</name>
         <value>true</value>
     </property>
     <property>
         <name>yarn.log.server.url</name>
-        <value>http://hadoop-master:19888/jobhistory/logs</value>
+        <value>http://hadoop-master:19888/jobhistory/logs</value> <!-- Points to Job History Server -->
     </property>
+
+    <!-- === NEW/MODIFIED: Explicit NodeManager Directories === -->
+    <property>
+      <description>Directory where NodeManager stores intermediate data. Should be under hadoop.tmp.dir.</description>
+      <name>yarn.nodemanager.local-dirs</name>
+      <!-- Assuming hadoop.tmp.dir is /opt/hadoop_tmp/data from core-site.xml -->
+      <value>/opt/hadoop_tmp/data/nm-local-dir</value>
+    </property>
+    <property>
+      <description>Directory where NodeManager stores container logs before aggregation.</description>
+      <name>yarn.nodemanager.log-dirs</name>
+      <!-- Assuming default HADOOP_LOG_DIR is $HADOOP_HOME/logs -->
+      <value>${HADOOP_LOG_DIR}/userlogs</value>
+      <!-- If HADOOP_LOG_DIR isn't reliably set, use explicit path: -->
+      <!-- <value>/opt/hadoop-3.3.6/logs/userlogs</value> -->
+    </property>
+    <!-- === End NEW/MODIFIED === -->
+
+    <!-- === REMOVED: Explicit yarn.application.classpath === -->
+    <!-- Let's rely on defaults + mapred-site.xml classpath for now -->
+    <!--
+    <property>
+        <description>Classpath for YARN applications...</description>
+        <name>yarn.application.classpath</name>
+        <value>...</value>
+    </property>
+    -->
+
 </configuration>
